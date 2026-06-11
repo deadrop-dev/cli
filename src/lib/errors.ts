@@ -3,13 +3,18 @@
  */
 export type ExitCode = 1 | 2;
 
+/** Machine-checkable error category (exit codes alone can't distinguish 403 from 404). */
+export type ErrorKind = "wrong-key" | "gone" | "rate-limited" | "server" | "user";
+
 export class CliError extends Error {
   readonly exitCode: ExitCode;
+  readonly kind: ErrorKind;
 
-  constructor(message: string, exitCode: ExitCode = 1) {
+  constructor(message: string, exitCode: ExitCode = 1, kind?: ErrorKind) {
     super(message);
     this.name = "CliError";
     this.exitCode = exitCode;
+    this.kind = kind ?? (exitCode === 2 ? "server" : "user");
   }
 }
 

@@ -39,19 +39,23 @@ async function doFetch(url: string, init: RequestInit): Promise<Response> {
 
 function mapError(status: number, action: "create" | "retrieve" | "revoke"): CliError {
   if (status === 403) {
-    return userError(
+    return new CliError(
       action === "revoke"
         ? "Server rejected the key — wrong URL key or password. The secret was NOT revoked."
         : "Server rejected the key — wrong URL key or password. The secret was NOT burned; you can retry.",
+      1,
+      "wrong-key",
     );
   }
   if (status === 404) {
-    return userError(
+    return new CliError(
       "Secret not found — it was already opened (burned), expired, revoked, or never existed.",
+      1,
+      "gone",
     );
   }
   if (status === 429) {
-    return serverError("Rate limited by the server (429). Wait a minute and retry.");
+    return new CliError("Rate limited by the server (429). Wait a minute and retry.", 2, "rate-limited");
   }
   if (status >= 500) {
     return serverError(`Server error (${status}). Try again later.`);

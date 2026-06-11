@@ -13,7 +13,7 @@ export interface RecordedRequest {
 export type Responder = (
   req: RecordedRequest,
   res: ServerResponse,
-) => void | Promise<void>;
+) => unknown;
 
 export interface MockServer {
   baseUrl: string;
