@@ -1,0 +1,36 @@
+{
+  "name": "@deadrop/cli",
+  "version": "0.1.0",
+  "description": "Terminal-native client for Deadrop — zero-ceremony one-time secret sharing.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "deadrop": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run --exclude test/live/**",
+    "test:live": "vitest run test/live",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deadrop/crypto": "^0.1.0",
+    "commander": "^12.1.0",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/qrcode-terminal": "^0.12.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
