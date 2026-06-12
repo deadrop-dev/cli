@@ -2,13 +2,18 @@
 
 Terminal-native client for [Deadrop](https://deadrop.dev) — zero-ceremony one-time secret sharing. Secrets are encrypted client-side (AES-256-GCM via [`@deadrop/crypto`](https://www.npmjs.com/package/@deadrop/crypto)); the server only ever sees ciphertext and burns it on first read.
 
-> Not yet published to a registry. Build from source:
->
-> ```bash
-> npm install
-> npm run build
-> node dist/index.js --help     # or: npm link && deadrop --help
-> ```
+## Install
+
+```bash
+npm install -g @deadrop/cli     # Node 20+
+deadrop --help
+```
+
+Or run it without installing:
+
+```bash
+npx @deadrop/cli send "my-api-key-12345"
+```
 
 ## Usage
 
@@ -126,7 +131,7 @@ deadrop receive "$URL" --quiet > /run/secrets/db_password
 
 ## Spec compliance
 
-Implements [SPEC.md v2.1](https://github.com/deadrop-dev/crypto/blob/main/SPEC.md), including the §9 request flow:
+Implements [SPEC.md v2.1](https://github.com/deadrop-dev/crypto/blob/master/SPEC.md), including the §9 request flow:
 
 - Client-generated 32-char base64url ids (24 random bytes); one regenerate-and-retry on a 409 collision
 - `POST /api/secrets {id, encrypted, iv, keyHash, expiresMinutes, hint?}`; retrieve/revoke key proof via `?k={keyHash}`

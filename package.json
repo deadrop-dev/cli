@@ -1,6 +1,6 @@
 {
   "name": "@deadrop/cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Terminal-native client for Deadrop — zero-ceremony one-time secret sharing.",
   "license": "MIT",
   "type": "module",
