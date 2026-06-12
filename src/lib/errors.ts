@@ -4,7 +4,7 @@
 export type ExitCode = 1 | 2;
 
 /** Machine-checkable error category (exit codes alone can't distinguish 403 from 404). */
-export type ErrorKind = "wrong-key" | "gone" | "rate-limited" | "server" | "user";
+export type ErrorKind = "wrong-key" | "gone" | "rate-limited" | "conflict" | "server" | "user";
 
 export class CliError extends Error {
   readonly exitCode: ExitCode;

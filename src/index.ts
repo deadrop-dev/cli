@@ -1,8 +1,11 @@
 import { Command } from "commander";
 import { defaultCtx } from "./commands/context.js";
+import { runClaim } from "./commands/claim.js";
 import { runConfig } from "./commands/config.js";
+import { runFulfill } from "./commands/fulfill.js";
 import { runQr } from "./commands/qr.js";
 import { runReceive } from "./commands/receive.js";
+import { runRequest } from "./commands/request.js";
 import { runRevoke } from "./commands/revoke.js";
 import { runSend } from "./commands/send.js";
 import { CliError } from "./lib/errors.js";
@@ -47,6 +50,32 @@ program
   .option("-j, --json", "Machine-readable JSON output")
   .option("-q, --quiet", "Print only the secret content")
   .action((url: string, opts) => run(() => runReceive(url, opts, defaultCtx())));
+
+program
+  .command("request [prompt]")
+  .description("Ask someone for a secret — prints a request link to send and a claim link to keep")
+  .option("-s, --server <url>", "Server URL (default: https://deadrop.dev)")
+  .option("-t, --ttl <duration>", "Time-to-live: 5m, 1h, 24h, 7d (default: 24h)")
+  .option("-j, --json", "Machine-readable JSON output")
+  .option("-q, --quiet", "Print only the two links (request, then claim)")
+  .option("--qr", "Render the request link as a QR code")
+  .action((prompt: string | undefined, opts) => run(() => runRequest(prompt, opts, defaultCtx())));
+
+program
+  .command("fulfill <url> [secret]")
+  .description("Answer a request link with a secret (reads stdin when piped)")
+  .option("-j, --json", "Machine-readable JSON output")
+  .option("-q, --quiet", "No output, exit code only")
+  .action((url: string, secret: string | undefined, opts) =>
+    run(() => runFulfill(url, secret, opts, defaultCtx())),
+  );
+
+program
+  .command("claim <url>")
+  .description("Claim and decrypt the response to your request (burns it; pending answers burn nothing)")
+  .option("-j, --json", "Machine-readable JSON output")
+  .option("-q, --quiet", "Print only the secret content")
+  .action((url: string, opts) => run(() => runClaim(url, opts, defaultCtx())));
 
 program
   .command("revoke <url>")

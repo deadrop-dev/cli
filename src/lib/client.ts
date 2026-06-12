@@ -113,3 +113,140 @@ export async function revokeSecret(
   );
   if (!res.ok) throw mapError(res.status, "revoke");
 }
+
+// ---------------------------------------------------------------------------
+// Request flow (SPEC 2.1 §9) — exact wire field names throughout.
+// ---------------------------------------------------------------------------
+
+/** POST /api/requests body. */
+export interface CreateRequestPayload {
+  id: string;
+  publicKey: string;
+  claimProof: string;
+  expiresMinutes: number;
+  prompt?: string;
+}
+
+/** GET /api/requests/{id} — semi-public status for the responder. */
+export interface RequestStatus {
+  publicKey: string;
+  prompt: string;
+  fulfilled: boolean;
+}
+
+/** POST /api/requests/{id}/response body. */
+export interface FulfillPayload {
+  encrypted: string;
+  iv: string;
+  wrappedKey: string;
+  wrapIv: string;
+  hkdfSalt: string;
+  responderPublicKey: string;
+}
+
+/** GET /api/requests/{id}/response — 202 means pending, nothing burned. */
+export type ClaimResult =
+  | { status: "pending" }
+  | { status: "claimed"; blob: FulfillPayload };
+
+/** 409 on fulfill: the request already has its one response. */
+export class AlreadyFulfilledError extends Error {
+  constructor() {
+    super("This request was already answered — each request takes exactly one response.");
+    this.name = "AlreadyFulfilledError";
+  }
+}
+
+const REQUEST_GONE =
+  "Request not found — it expired, was already claimed, or never existed.";
+
+/** POST /api/requests. Throws IdCollisionError on 409. */
+export async function createRequest(
+  server: string,
+  payload: CreateRequestPayload,
+): Promise<void> {
+  const res = await doFetch(`${server}/api/requests`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (res.ok) return;
+  if (res.status === 409) throw new IdCollisionError();
+  throw mapError(res.status, "create");
+}
+
+/** GET /api/requests/{id} — no key proof needed (semi-public, like /meta). */
+export async function getRequestStatus(
+  server: string,
+  id: string,
+): Promise<RequestStatus> {
+  const res = await doFetch(`${server}/api/requests/${id}`, { method: "GET" });
+  if (res.status === 404) throw new CliError(REQUEST_GONE, 1, "gone");
+  if (!res.ok) throw mapError(res.status, "retrieve");
+  const body = (await res.json()) as Partial<RequestStatus>;
+  if (typeof body.publicKey !== "string") {
+    throw serverError("Malformed server response (missing publicKey).");
+  }
+  return {
+    publicKey: body.publicKey,
+    prompt: body.prompt ?? "",
+    fulfilled: Boolean(body.fulfilled),
+  };
+}
+
+/** POST /api/requests/{id}/response. Throws AlreadyFulfilledError on 409. */
+export async function fulfillRequest(
+  server: string,
+  id: string,
+  payload: FulfillPayload,
+): Promise<void> {
+  const res = await doFetch(`${server}/api/requests/${id}/response`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (res.ok) return;
+  if (res.status === 409) throw new AlreadyFulfilledError();
+  if (res.status === 404) throw new CliError(REQUEST_GONE, 1, "gone");
+  throw mapError(res.status, "create");
+}
+
+/**
+ * GET /api/requests/{id}/response?proof={claimProof}.
+ * §9.3 precedence: 404 gone → 403 proof mismatch (no burn) → 202 pending
+ * (no burn) → 200 burn. 202 is a normal outcome, not an error.
+ */
+export async function claimResponse(
+  server: string,
+  id: string,
+  claimProof: string,
+): Promise<ClaimResult> {
+  const res = await doFetch(
+    `${server}/api/requests/${id}/response?proof=${encodeURIComponent(claimProof)}`,
+    { method: "GET" },
+  );
+  if (res.status === 202) return { status: "pending" };
+  if (res.status === 404) throw new CliError(REQUEST_GONE, 1, "gone");
+  if (res.status === 403) {
+    throw new CliError(
+      "Server rejected the claim proof — the claim link looks corrupted. Nothing was burned.",
+      1,
+      "wrong-key",
+    );
+  }
+  if (!res.ok) throw mapError(res.status, "retrieve");
+  const body = (await res.json()) as Partial<FulfillPayload>;
+  for (const field of [
+    "encrypted",
+    "iv",
+    "wrappedKey",
+    "wrapIv",
+    "hkdfSalt",
+    "responderPublicKey",
+  ] as const) {
+    if (typeof body[field] !== "string") {
+      throw serverError(`Malformed server response (missing ${field}).`);
+    }
+  }
+  return { status: "claimed", blob: body as FulfillPayload };
+}

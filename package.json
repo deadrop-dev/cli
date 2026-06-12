@@ -22,7 +22,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deadrop/crypto": "^0.1.0",
+    "@deadrop/crypto": "^0.3.0",
     "commander": "^12.1.0",
     "qrcode-terminal": "^0.12.0"
   },
