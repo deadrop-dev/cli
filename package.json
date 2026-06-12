@@ -1,9 +1,24 @@
 {
   "name": "@deadrop/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Terminal-native client for Deadrop — zero-ceremony one-time secret sharing.",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deadrop-dev/cli.git"
+  },
+  "homepage": "https://deadrop.dev",
+  "bugs": "https://github.com/deadrop-dev/cli/issues",
+  "keywords": [
+    "secrets",
+    "secret-sharing",
+    "one-time",
+    "zero-knowledge",
+    "encryption",
+    "aes-256-gcm",
+    "cli"
+  ],
   "bin": {
     "deadrop": "dist/index.js"
   },
@@ -13,13 +28,17 @@
     "README.md"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
     "test:live": "vitest run --config vitest.live.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "tsc --noEmit && tsup"
   },
   "dependencies": {
     "@deadrop/crypto": "^0.3.0",

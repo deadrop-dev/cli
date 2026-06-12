@@ -10,7 +10,7 @@ import { runRevoke } from "./commands/revoke.js";
 import { runSend } from "./commands/send.js";
 import { CliError } from "./lib/errors.js";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 /**
  * Exit codes: 0 success, 1 user error, 2 network/server error.
