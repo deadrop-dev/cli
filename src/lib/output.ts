@@ -1,3 +1,4 @@
+import { humanFileSize } from "./file-envelope.js";
 import type { OutputMode } from "./settings.js";
 import { ttlToHuman } from "./ttl.js";
 
@@ -46,6 +47,21 @@ export function formatReceiveResult(content: string, mode: OutputMode): string {
   if (mode === "quiet") return content;
   if (mode === "json") return JSON.stringify({ content, burned: true }) + "\n";
   return "Secret revealed (burned):\n\n" + content + "\n";
+}
+
+export interface FileReceiveResult {
+  name: string;
+  size: number;
+  path: string;
+}
+
+/** Quiet prints only the written path (pipe-friendly chaining). */
+export function formatFileReceiveResult(r: FileReceiveResult, mode: OutputMode): string {
+  if (mode === "quiet") return r.path + "\n";
+  if (mode === "json") {
+    return JSON.stringify({ file: { name: r.name, size: r.size, path: r.path }, burned: true }) + "\n";
+  }
+  return `File received (burned):\n\n  wrote ${r.path} (${humanFileSize(r.size)})\n`;
 }
 
 export interface RequestResult {

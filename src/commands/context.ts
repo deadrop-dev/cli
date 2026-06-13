@@ -3,7 +3,7 @@ import { configPath } from "../config/store.js";
 import { promptPassword } from "../lib/prompt.js";
 
 export interface WriteSink {
-  write(s: string): unknown;
+  write(s: string | Uint8Array): unknown;
 }
 
 /**
@@ -20,6 +20,8 @@ export interface Ctx {
   stdinIsTTY: boolean;
   promptPassword: (text: string) => Promise<string>;
   now: () => Date;
+  /** Where receive writes files by default — injectable for tests. */
+  cwd: () => string;
 }
 
 export function defaultCtx(): Ctx {
@@ -33,6 +35,7 @@ export function defaultCtx(): Ctx {
     stdinIsTTY: Boolean(process.stdin.isTTY),
     promptPassword: (text) => promptPassword(text, process.stdin, process.stderr),
     now: () => new Date(),
+    cwd: () => process.cwd(),
   };
 }
 
@@ -46,4 +49,10 @@ export interface CommonFlags {
   password?: boolean | string;
   hint?: string;
   qr?: boolean;
+  /** send/fulfill: path of a file to send as the secret */
+  file?: string;
+  /** receive: write the payload to this path instead of cwd/stdout */
+  out?: string;
+  /** receive: allow overwriting an existing file */
+  force?: boolean;
 }

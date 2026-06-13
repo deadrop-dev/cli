@@ -10,7 +10,7 @@ import { runRevoke } from "./commands/revoke.js";
 import { runSend } from "./commands/send.js";
 import { CliError } from "./lib/errors.js";
 
-const VERSION = "0.2.1";
+const VERSION = "0.3.0";
 
 /**
  * Exit codes: 0 success, 1 user error, 2 network/server error.
@@ -38,6 +38,7 @@ program
   .option("-t, --ttl <duration>", "Time-to-live: 5m, 1h, 24h, 7d (default: 1h)")
   .option("-p, --password [password]", "Password-protect (prompts when no value given)")
   .option("--hint <hint>", "Password hint, shown to the recipient (max 140 chars)")
+  .option("-f, --file <path>", "Send a file (max 256 KB) instead of text")
   .option("-j, --json", "Machine-readable JSON output")
   .option("-q, --quiet", "Print only the URL")
   .option("--qr", "Render a QR code after creating the link")
@@ -45,10 +46,12 @@ program
 
 program
   .command("receive <url>")
-  .description("Retrieve and decrypt a secret (burns it)")
+  .description("Retrieve and decrypt a secret (burns it; file secrets are written to disk)")
   .option("-p, --password [password]", "Password for protected secrets (prompts otherwise)")
+  .option("-o, --out <path>", "Write the payload to this path")
+  .option("--force", "Overwrite an existing file")
   .option("-j, --json", "Machine-readable JSON output")
-  .option("-q, --quiet", "Print only the secret content")
+  .option("-q, --quiet", "Print only the secret content (file secrets: raw bytes)")
   .action((url: string, opts) => run(() => runReceive(url, opts, defaultCtx())));
 
 program
@@ -64,6 +67,7 @@ program
 program
   .command("fulfill <url> [secret]")
   .description("Answer a request link with a secret (reads stdin when piped)")
+  .option("-f, --file <path>", "Not supported for requests yet (prints why)")
   .option("-j, --json", "Machine-readable JSON output")
   .option("-q, --quiet", "No output, exit code only")
   .action((url: string, secret: string | undefined, opts) =>

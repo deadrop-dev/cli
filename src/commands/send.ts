@@ -1,7 +1,15 @@
+import { readFileSync } from "node:fs";
+import { basename } from "node:path";
 import { loadConfig, saveLastUrl } from "../config/store.js";
 import { createSecret, IdCollisionError } from "../lib/client.js";
 import { sealSecret } from "../lib/crypto-flow.js";
 import { serverError, userError } from "../lib/errors.js";
+import {
+  encodeFileEnvelope,
+  humanFileSize,
+  MAX_FILE_BYTES,
+  mimeFromName,
+} from "../lib/file-envelope.js";
 import { generateId } from "../lib/id.js";
 import { effectiveOutput, formatSendResult } from "../lib/output.js";
 import { readAllStdin } from "../lib/prompt.js";
@@ -19,15 +27,39 @@ export async function runSend(
 ): Promise<void> {
   const settings = resolveSettings(flags, ctx.env, loadConfig(ctx.configFile));
 
-  // Secret: inline arg, or stdin when piped.
+  // Secret: --file, inline arg, or stdin when piped.
   let plaintext: string;
-  if (secretArg !== undefined) {
+  if (flags.file !== undefined) {
+    if (secretArg !== undefined) {
+      throw userError("--file and an inline secret are mutually exclusive — pass one or the other.");
+    }
+    // stdin is deliberately not consumed with --file: a non-TTY stdin is
+    // normal in scripts and CI, so requiring a TTY here would break them.
+    let bytes: Buffer;
+    try {
+      bytes = readFileSync(flags.file);
+    } catch {
+      throw userError(`Cannot read file: ${flags.file}`);
+    }
+    if (bytes.length === 0) {
+      throw userError("Refusing to send an empty file.");
+    }
+    if (bytes.length > MAX_FILE_BYTES) {
+      // Exact bytes, not rounded units — near the boundary "256.0 KB vs
+      // 256.0 KB" reads like nonsense.
+      throw userError(
+        `File is too large: ${bytes.length.toLocaleString("en-US")} bytes (max ${MAX_FILE_BYTES.toLocaleString("en-US")} = 256 KiB).`,
+      );
+    }
+    const name = basename(flags.file);
+    plaintext = encodeFileEnvelope(name, mimeFromName(name), new Uint8Array(bytes));
+  } else if (secretArg !== undefined) {
     plaintext = secretArg;
   } else if (!ctx.stdinIsTTY) {
     plaintext = await readAllStdin(ctx.stdin);
   } else {
     throw userError(
-      'No secret provided. Pass it as an argument (deadrop send "secret") or pipe it via stdin.',
+      'No secret provided. Pass it as an argument (deadrop send "secret"), pipe it via stdin, or use --file.',
     );
   }
   if (plaintext.length === 0) {

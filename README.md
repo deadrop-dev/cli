@@ -44,6 +44,17 @@ deadrop receive "https://..." --quiet > secret.env                 # exact bytes
 
 Receiving **burns** the secret — it is deleted server-side in the same atomic step. A wrong password does NOT burn it (the server rejects the key proof without deleting).
 
+### Files
+
+```bash
+deadrop send --file .env.production          # any file up to 256 KB
+deadrop receive "https://..."                # writes ./<filename>, refuses to overwrite
+deadrop receive "https://..." -o creds.env   # choose the path (--force to overwrite)
+deadrop receive "https://..." --quiet > f.bin  # raw bytes to stdout when piped
+```
+
+A file travels as an encrypted envelope indistinguishable from a text secret — the server cannot tell a file from a note (SPEC §10). Filenames from the envelope are sanitized before anything is written. `--file` and an inline secret are mutually exclusive. Request-flow responses are text-only for now: `deadrop fulfill --file` explains why and what to use instead.
+
 ### Request a secret (reverse flow)
 
 ```bash

@@ -14,6 +14,12 @@ export async function runFulfill(
   flags: CommonFlags,
   ctx: Ctx,
 ): Promise<void> {
+  if (flags.file !== undefined) {
+    throw userError(
+      "--file is not supported for requests yet — responses are capped at 64 KB by the protocol (SPEC §9). " +
+        "Send the file forward instead: deadrop send --file <path>",
+    );
+  }
   const parsed = parseRequestUrl(urlArg); // host from the URL, like receive
   const settings = resolveSettings(
     { json: flags.json, quiet: flags.quiet },
